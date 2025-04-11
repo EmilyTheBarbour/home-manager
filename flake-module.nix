@@ -6,7 +6,6 @@
 }:
 let
   inherit (lib)
-    toString
     mapAttrs
     mkOption
     types
@@ -32,7 +31,7 @@ in
         apply = mapAttrs (
           k: v: {
             _class = "homeManager";
-            _file = "${toString moduleLocation}#homeModules.${k}";
+            _file = "${builtins.toString moduleLocation}#homeModules.${k}";
             imports = [ v ];
           }
         );
