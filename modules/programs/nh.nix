@@ -1,15 +1,11 @@
 {
   config,
-  osConfig,
   lib,
   pkgs,
   ...
 }:
-
 let
-
   cfg = config.programs.nh;
-
 in
 {
   meta.maintainers = with lib.maintainers; [ johnrtitor ];
@@ -60,16 +56,18 @@ in
 
   config = {
     warnings =
-      (lib.optional (cfg.clean.enable && osConfig != null && osConfig.nix.gc.automatic)
-        "programs.nh.clean.enable and nix.gc.automatic (system-wide in configuration.nix) are both enabled. Please use one or the other to avoid conflict."
-      )
-      ++ (lib.optional (cfg.clean.enable && config.nix.gc.automatic)
-        "programs.nh.clean.enable and nix.gc.automatic (Home-Manager) are both enabled. Please use one or the other to avoid conflict."
-      );
+      lib.optional (cfg.clean.enable && config.nix.gc.automatic)
+        "programs.nh.clean.enable and nix.gc.automatic (Home-Manager) are both enabled. Please use one or the other to avoid conflict.";
 
     home = lib.mkIf cfg.enable {
       packages = [ cfg.package ];
-      sessionVariables = lib.mkIf (cfg.flake != null) { FLAKE = cfg.flake; };
+      sessionVariables = lib.mkIf (cfg.flake != null) (
+        let
+          packageVersion = lib.getVersion cfg.package;
+          isVersion4OrHigher = lib.versionAtLeast packageVersion "4.0.0";
+        in
+        if isVersion4OrHigher then { NH_FLAKE = cfg.flake; } else { FLAKE = cfg.flake; }
+      );
     };
 
     systemd.user = lib.mkIf cfg.clean.enable {

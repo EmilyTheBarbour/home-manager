@@ -81,171 +81,7 @@ let
     outer;
 
   # TODO: figure out stdenv stubbing so we don't have to do this
-  darwinBlacklist =
-    let
-      # List of packages that need to be scrubbed on Darwin
-      # Packages are scrubbed in linux and expected in test output
-      packagesToScrub = [
-        "aerc"
-        "aerospace"
-        "alacritty"
-        "alot"
-        "antidote"
-        "aria2"
-        "atuin"
-        "autojump"
-        "bacon"
-        "bash"
-        "bashInteractive"
-        "bash-completion"
-        "bash-preexec"
-        "bat"
-        "borgmatic"
-        "bottom"
-        "broot"
-        "browserpass"
-        "btop"
-        "carapace"
-        "cava"
-        "cmus"
-        "comodoro"
-        "darcs"
-        "dircolors"
-        "delta"
-        "direnv"
-        "earthly"
-        "emacs"
-        "espanso"
-        "fastfetch"
-        "feh"
-        "gallery-dl"
-        "gh"
-        "gh-dash"
-        "ghostty"
-        "git"
-        "git-cliff"
-        "git-credential-oauth"
-        "git-worktree-switcher"
-        "gnupg"
-        "go"
-        "granted"
-        "helix"
-        "himalaya"
-        "htop"
-        "hyfetch"
-        "i3status"
-        "irssi"
-        "jankyborders"
-        "jujutsu"
-        "joplin-desktop"
-        "jqp"
-        "k9s"
-        "kakoune"
-        "khal"
-        "khard"
-        "kitty"
-        "kubecolor"
-        "lapce"
-        "lazydocker"
-        "lazygit"
-        "ledger"
-        "less"
-        "lesspipe"
-        "lf"
-        "lsd"
-        "lieer"
-        "mbsync"
-        "mergiraf"
-        "micro"
-        "mise"
-        "mpv"
-        "mu"
-        "mujmap"
-        "msmtp"
-        "ne"
-        "neomutt"
-        "neovide"
-        "neovim"
-        "nheko"
-        "nix"
-        "nix-index"
-        "nix-your-shell"
-        "notmuch"
-        "npth"
-        "nushell"
-        "ollama"
-        "onlyoffice-desktopeditors"
-        "openstackclient"
-        "papis"
-        "pay-respects"
-        "pet"
-        "pistol"
-        "pls"
-        "poetry"
-        "powerline-go"
-        "pubs"
-        "pyenv"
-        "qcal"
-        "qutebrowser"
-        "ranger"
-        "rio"
-        "ripgrep"
-        "ruff"
-        "sage"
-        "sapling"
-        "sbt"
-        "scmpuff"
-        "senpai"
-        "sftpman"
-        "sioyek"
-        "skhd"
-        "sm64ex"
-        "smug"
-        "spotify-player"
-        "starship"
-        "taskwarrior"
-        "tealdeer"
-        "texlive"
-        "thefuck"
-        "thunderbird"
-        "tmate"
-        "topgrade"
-        "translate-shell"
-        "vifm"
-        "vim-vint"
-        "vimPlugins"
-        "vscode"
-        "watson"
-        "wezterm"
-        "yazi"
-        "yq-go"
-        "yubikey-agent"
-        "zed-editor"
-        "zellij"
-        "zk"
-        "zplug"
-        "zsh"
-      ];
-
-      inner =
-        self: super:
-        lib.mapAttrs (
-          name: value:
-          if lib.elem name packagesToScrub then
-            # Apply scrubbing to this specific package
-            scrubDerivation name value
-          else
-            value
-        ) super;
-
-      outer =
-        self: super:
-        inner self super
-        // {
-          buildPackages = super.buildPackages.extend inner;
-        };
-    in
-    outer;
+  darwinScrublist = import ./darwinScrublist.nix { inherit lib scrubDerivation; };
 
   scrubbedPkgs =
     # TODO: fix darwin stdenv stubbing
@@ -253,7 +89,7 @@ let
       let
         rawPkgs = lib.makeExtensible (final: pkgs);
       in
-      builtins.traceVerbose "eval scrubbed darwin nixpkgs" (rawPkgs.extend darwinBlacklist)
+      builtins.traceVerbose "eval scrubbed darwin nixpkgs" (rawPkgs.extend darwinScrublist)
     else
       let
         rawScrubbedPkgs = lib.makeExtensible (final: scrubDerivations pkgs);
@@ -352,6 +188,7 @@ import nmtSrc {
       ./modules/programs/btop
       ./modules/programs/carapace
       ./modules/programs/cava
+      ./modules/programs/clock-rs
       ./modules/programs/cmus
       ./modules/programs/comodoro
       ./modules/programs/darcs
@@ -379,12 +216,14 @@ import nmtSrc {
       ./modules/programs/htop
       ./modules/programs/hyfetch
       ./modules/programs/i3status
+      ./modules/programs/inori
       ./modules/programs/irssi
       ./modules/programs/jujutsu
       ./modules/programs/joplin-desktop
       ./modules/programs/jqp
       ./modules/programs/k9s
       ./modules/programs/kakoune
+      ./modules/programs/keepassxc
       ./modules/programs/khal
       ./modules/programs/khard
       ./modules/programs/kitty
@@ -414,6 +253,7 @@ import nmtSrc {
       ./modules/programs/newsboat
       ./modules/programs/nheko
       ./modules/programs/nix-index
+      ./modules/programs/nix-init
       ./modules/programs/nix-your-shell
       ./modules/programs/nnn
       ./modules/programs/nushell
@@ -452,8 +292,10 @@ import nmtSrc {
       ./modules/programs/ssh
       ./modules/programs/starship
       ./modules/programs/streamlink
+      ./modules/programs/superfile
       ./modules/programs/taskwarrior
       ./modules/programs/tealdeer
+      ./modules/programs/television
       ./modules/programs/tex-fmt
       ./modules/programs/texlive
       ./modules/programs/thefuck
@@ -462,9 +304,11 @@ import nmtSrc {
       ./modules/programs/tmux
       ./modules/programs/topgrade
       ./modules/programs/translate-shell
+      ./modules/programs/uv
       ./modules/programs/vifm
       ./modules/programs/vim-vint
       ./modules/programs/vscode
+      ./modules/programs/wallust
       ./modules/programs/watson
       ./modules/programs/wezterm
       ./modules/programs/yazi
@@ -533,6 +377,7 @@ import nmtSrc {
       ./modules/programs/looking-glass-client
       ./modules/programs/mangohud
       ./modules/programs/ncmpcpp-linux
+      ./modules/programs/nh
       ./modules/programs/pqiv
       ./modules/programs/rbw
       ./modules/programs/rofi
@@ -542,6 +387,7 @@ import nmtSrc {
       ./modules/programs/swayr
       ./modules/programs/terminator
       ./modules/programs/tofi
+      ./modules/programs/vesktop
       ./modules/programs/vinegar
       ./modules/programs/waybar
       ./modules/programs/wlogout
@@ -607,7 +453,9 @@ import nmtSrc {
       ./modules/services/recoll
       ./modules/services/redshift-gammastep
       ./modules/services/remmina
+      ./modules/services/restic
       ./modules/services/screen-locker
+      ./modules/services/shikane
       ./modules/services/signaturepdf
       ./modules/services/snixembed
       ./modules/services/swayidle
@@ -627,6 +475,7 @@ import nmtSrc {
       ./modules/services/window-managers/herbstluftwm
       ./modules/services/window-managers/hyprland
       ./modules/services/window-managers/i3
+      ./modules/services/window-managers/labwc
       ./modules/services/window-managers/river
       ./modules/services/window-managers/spectrwm
       ./modules/services/window-managers/sway
