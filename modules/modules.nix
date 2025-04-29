@@ -158,6 +158,7 @@ let
       ./programs/keychain.nix
       ./programs/khal.nix
       ./programs/khard.nix
+      ./programs/kickoff.nix
       ./programs/kitty.nix
       ./programs/kodi.nix
       ./programs/kubecolor.nix
@@ -183,6 +184,7 @@ let
       ./programs/mise.nix
       ./programs/mods.nix
       ./programs/mpv.nix
+      ./programs/mpvpaper.nix
       ./programs/mr.nix
       ./programs/msmtp.nix
       ./programs/mu.nix
@@ -208,6 +210,7 @@ let
       ./programs/octant.nix
       ./programs/offlineimap.nix
       ./programs/oh-my-posh.nix
+      ./programs/onedrive.nix
       ./programs/onlyoffice.nix
       ./programs/opam.nix
       ./programs/openstackclient.nix
@@ -236,6 +239,7 @@ let
       ./programs/rio.nix
       ./programs/ripgrep.nix
       ./programs/ripgrep-all.nix
+      ./programs/rmpc.nix
       ./programs/rofi-pass.nix
       ./programs/rofi.nix
       ./programs/rtorrent.nix
