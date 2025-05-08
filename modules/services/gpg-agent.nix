@@ -20,7 +20,7 @@ let
   homedir = config.programs.gpg.homedir;
 
   gpgSshSupportStr = ''
-    ${gpgPkg}/bin/gpg-connect-agent updatestartuptty /bye > /dev/null
+    ${gpgPkg}/bin/gpg-connect-agent --quiet updatestartuptty /bye > /dev/null
   '';
 
   gpgInitStr =
@@ -47,7 +47,7 @@ let
       $env.GPG_TTY = (tty)
     ''
     + optionalString cfg.enableSshSupport ''
-      ${gpgPkg}/bin/gpg-connect-agent updatestartuptty /bye | ignore
+      ${gpgPkg}/bin/gpg-connect-agent --quiet updatestartuptty /bye | ignore
 
       $env.SSH_AUTH_SOCK = ($env.SSH_AUTH_SOCK? | default (${gpgPkg}/bin/gpgconf --list-dirs agent-ssh-socket))
     '';
@@ -328,7 +328,7 @@ in
 
         program = lib.mkOption {
           type = types.nullOr types.str;
-          example = "wayprompt-pinentry";
+          example = "pinentry-wayprompt";
           description = ''
             Which program to search for in the configured `pinentry.package`.
           '';

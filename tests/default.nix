@@ -41,11 +41,7 @@ let
       if lib.isDerivation value then scrubbedValue // newDrvAttrs else scrubbedValue
     else
       value;
-  scrubDerivations =
-    attrs:
-    let
-    in
-    lib.mapAttrs scrubDerivation attrs;
+  scrubDerivations = attrs: lib.mapAttrs scrubDerivation attrs;
 
   # Globally unscrub a few selected packages that are used by a wide selection of tests.
   whitelist =
@@ -199,6 +195,10 @@ import nmtSrc {
       ./modules/programs/eza
       ./modules/programs/fastfetch
       ./modules/programs/feh
+      ./modules/programs/firefox
+      ./modules/programs/firefox/firefox.nix
+      ./modules/programs/firefox/floorp.nix
+      ./modules/programs/firefox/librewolf.nix
       ./modules/programs/fish
       ./modules/programs/gallery-dl
       ./modules/programs/gh
@@ -309,6 +309,7 @@ import nmtSrc {
       ./modules/programs/uv
       ./modules/programs/vifm
       ./modules/programs/vim-vint
+      ./modules/programs/visidata
       ./modules/programs/vscode
       ./modules/programs/wallust
       ./modules/programs/watson
@@ -326,6 +327,7 @@ import nmtSrc {
     ++ lib.optionals isDarwin [
       ./modules/launchd
       ./modules/programs/aerospace
+      ./modules/programs/element-desktop/darwin.nix
       ./modules/services/emacs-darwin
       ./modules/services/espanso-darwin
       ./modules/services/git-sync-darwin
@@ -359,11 +361,8 @@ import nmtSrc {
       ./modules/programs/boxxy
       ./modules/programs/cavalier
       ./modules/programs/distrobox
+      ./modules/programs/element-desktop/linux.nix
       ./modules/programs/eww
-      ./modules/programs/firefox
-      ./modules/programs/firefox/firefox.nix
-      ./modules/programs/firefox/floorp.nix
-      ./modules/programs/firefox/librewolf.nix
       ./modules/programs/foot
       ./modules/programs/freetube
       ./modules/programs/fuzzel
@@ -372,6 +371,7 @@ import nmtSrc {
       ./modules/programs/gnome-terminal
       ./modules/programs/hexchat
       ./modules/programs/hyprlock
+      ./modules/programs/i3bar-river
       ./modules/programs/i3blocks
       ./modules/programs/i3status-rust
       ./modules/programs/imv
@@ -382,11 +382,13 @@ import nmtSrc {
       ./modules/programs/mpvpaper
       ./modules/programs/ncmpcpp-linux
       ./modules/programs/nh
+      ./modules/programs/onagre
       ./modules/programs/onedrive
       ./modules/programs/pqiv
       ./modules/programs/rbw
       ./modules/programs/rofi
       ./modules/programs/rofi-pass
+      ./modules/programs/sway-easyfocus
       ./modules/programs/swayimg
       ./modules/programs/swaylock
       ./modules/programs/swayr
@@ -395,6 +397,7 @@ import nmtSrc {
       ./modules/programs/vesktop
       ./modules/programs/vinegar
       ./modules/programs/waybar
+      ./modules/programs/wayprompt
       ./modules/programs/wlogout
       ./modules/programs/wofi
       ./modules/programs/xmobar
@@ -406,6 +409,7 @@ import nmtSrc {
       ./modules/services/blanket
       ./modules/services/borgmatic
       ./modules/services/cachix-agent
+      ./modules/services/clipcat
       ./modules/services/cliphist
       ./modules/services/clipman
       ./modules/services/clipse
@@ -437,6 +441,7 @@ import nmtSrc {
       ./modules/services/lieer
       ./modules/services/linux-wallpaperengine
       ./modules/services/lxqt-policykit-agent
+      ./modules/services/mako
       ./modules/services/mopidy
       ./modules/services/mpd
       ./modules/services/mpd-mpris
