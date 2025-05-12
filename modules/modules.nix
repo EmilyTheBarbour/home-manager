@@ -127,6 +127,7 @@ let
       ./programs/gpg.nix
       ./programs/gradle.nix
       ./programs/granted.nix
+      ./programs/halloy.nix
       ./programs/havoc.nix
       ./programs/helix.nix
       ./programs/hexchat.nix
@@ -175,6 +176,7 @@ let
       ./programs/lieer.nix
       ./programs/looking-glass-client.nix
       ./programs/lsd.nix
+      ./programs/lutris.nix
       ./programs/man.nix
       ./programs/mangohud.nix
       ./programs/matplotlib.nix
@@ -207,6 +209,7 @@ let
       ./programs/nnn.nix
       ./programs/noti.nix
       ./programs/notmuch.nix
+      ./programs/numbat.nix
       ./programs/nushell.nix
       ./programs/obs-studio.nix
       ./programs/octant.nix
@@ -302,6 +305,7 @@ let
       ./programs/rbenv.nix
       ./programs/wallust.nix
       ./programs/watson.nix
+      ./programs/waveterm.nix
       ./programs/waylogout.nix
       ./programs/waybar.nix
       ./programs/wayprompt.nix
