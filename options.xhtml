@@ -29301,6 +29301,30 @@ boolean</p>
 </dd>
 <dt>
  <span class="term">
+ <a id="opt-programs.gnome-terminal.package"></a><a class="term" href="options.xhtml#opt-programs.gnome-terminal.package"><code class="option">programs.gnome-terminal.package</code>
+  </a>
+ </span>
+</dt>
+<dd>
+<p>The gnome-terminal package to use.</p>
+
+<p><span class="emphasis"><em>Type:</em></span>
+null or package</p>
+
+<p><span class="emphasis"><em>Default:</em></span>
+<code class="literal">pkgs.gnome-terminal</code></p>
+
+<p><span class="emphasis"><em>Declared by:</em></span></p>
+<table border="0" summary="Simple list" class="simplelist">
+<tr><td>
+<code class="filename"><a class="filename"  href="https://github.com/nix-community/home-manager/blob/master/modules/programs/gnome-terminal.nix" target="_top">
+&lt;home-manager/modules/programs/gnome-terminal.nix&gt;
+</a></code>
+</td></tr>
+</table>
+</dd>
+<dt>
+ <span class="term">
  <a id="opt-programs.gnome-terminal.profile"></a><a class="term" href="options.xhtml#opt-programs.gnome-terminal.profile"><code class="option">programs.gnome-terminal.profile</code>
   </a>
  </span>
@@ -30942,7 +30966,8 @@ null or package</p>
 </dt>
 <dd>
 <p>Configuration settings for halloy. All available options can be
-found here: <a class="link" href="https://halloy.chat/configuration/index.html"  target="_top">https://halloy.chat/configuration/index.html</a>.</p>
+found here: <a class="link" href="https://halloy.chat/configuration/index.html"  target="_top">https://halloy.chat/configuration/index.html</a>. Note that
+halloy requires at least one <code class="literal">server</code> to be configured, see example.</p>
 
 <p><span class="emphasis"><em>Type:</em></span>
 TOML value</p>
@@ -30990,20 +31015,23 @@ attribute set of (TOML value or strings concatenated with “\n” or absolute p
 <code class="literal">{ }</code></p>
 
 <p><span class="emphasis"><em>Example:</em></span></p><pre><code class="programlisting">{
-  general = {
-    background = &quot;&lt;string&gt;&quot;;
-    border = &quot;&lt;string&gt;&quot;;
-    horizontal_rule = &quot;&lt;string&gt;&quot;;
-    unread_indicator = &quot;&lt;string&gt;&quot;;
-  };
-  text = {
-    error = &quot;&lt;string&gt;&quot;;
-    primary = &quot;&lt;string&gt;&quot;;
-    secondary = &quot;&lt;string&gt;&quot;;
-    success = &quot;&lt;string&gt;&quot;;
-    tertiary = &quot;&lt;string&gt;&quot;;
+  my-theme = {
+    general = {
+      background = &quot;&lt;string&gt;&quot;;
+      border = &quot;&lt;string&gt;&quot;;
+      horizontal_rule = &quot;&lt;string&gt;&quot;;
+      unread_indicator = &quot;&lt;string&gt;&quot;;
+    };
+    text = {
+      primary = &quot;&lt;string&gt;&quot;;
+      secondary = &quot;&lt;string&gt;&quot;;
+      tertiary = &quot;&lt;string&gt;&quot;;
+      success = &quot;&lt;string&gt;&quot;;
+      error = &quot;&lt;string&gt;&quot;;
+    };
   };
 }
+
 </code></pre>
 
 <p><span class="emphasis"><em>Declared by:</em></span></p>
@@ -80794,74 +80822,42 @@ package</p>
 </dd>
 <dt>
  <span class="term">
- <a id="opt-services.mako.criteria"></a><a class="term" href="options.xhtml#opt-services.mako.criteria"><code class="option">services.mako.criteria</code>
-  </a>
- </span>
-</dt>
-<dd>
-<p>Criterias for mako’s config. All the details can be found in the
-CRITERIA section in the official documentation.</p>
-
-<p><span class="emphasis"><em>Type:</em></span>
-attribute set of section of an INI file (attrs of INI atom (null, bool, int, float or string))</p>
-
-<p><span class="emphasis"><em>Default:</em></span>
-<code class="literal">{ }</code></p>
-
-<p><span class="emphasis"><em>Example:</em></span></p><pre><code class="programlisting">{
-  &quot;actionable=true&quot; = {
-    anchor = &quot;top-left&quot;;
-  };
-  &quot;app-name=Google\\ Chrome&quot; = {
-    max-visible = &quot;5&quot;;
-  };
-  &quot;field1=value field2=value&quot; = {
-    text-alignment = &quot;left&quot;;
-  };
-}
-</code></pre>
-
-<p><span class="emphasis"><em>Declared by:</em></span></p>
-<table border="0" summary="Simple list" class="simplelist">
-<tr><td>
-<code class="filename"><a class="filename"  href="https://github.com/nix-community/home-manager/blob/master/modules/services/mako.nix" target="_top">
-&lt;home-manager/modules/services/mako.nix&gt;
-</a></code>
-</td></tr>
-</table>
-</dd>
-<dt>
- <span class="term">
  <a id="opt-services.mako.settings"></a><a class="term" href="options.xhtml#opt-services.mako.settings"><code class="option">services.mako.settings</code>
   </a>
  </span>
 </dt>
 <dd>
-<p>Configuration settings for mako. All available options can be found
-here: <a class="link" href="https://github.com/emersion/mako/blob/master/doc/mako.5.scd"  target="_top">https://github.com/emersion/mako/blob/master/doc/mako.5.scd</a>.</p>
+<p>Configuration settings for mako. Can include both global settings and sections.
+All available options can be found here:
+<a class="link" href="https://github.com/emersion/mako/blob/master/doc/mako.5.scd"  target="_top">https://github.com/emersion/mako/blob/master/doc/mako.5.scd</a>.</p>
 
 <p><span class="emphasis"><em>Type:</em></span>
-attribute set of (INI atom (null, bool, int, float or string))</p>
+attribute set of (INI atom (null, bool, int, float or string) or attribute set of (INI atom (null, bool, int, float or string)))</p>
 
 <p><span class="emphasis"><em>Default:</em></span>
 <code class="literal">{ }</code></p>
 
 <p><span class="emphasis"><em>Example:</em></span></p><pre><code class="programlisting">&#x27;&#x27;
   {
-    actions = &quot;true&quot;;
+    actions = true;
     anchor = &quot;top-right&quot;;
     background-color = &quot;#000000&quot;;
     border-color = &quot;#FFFFFF&quot;;
-    border-radius = &quot;0&quot;;
-    default-timeout = &quot;0&quot;;
+    border-radius = 0;
+    default-timeout = 0;
     font = &quot;monospace 10&quot;;
-    height = &quot;100&quot;;
-    width = &quot;300&quot;;
-    icons = &quot;true&quot;;
-    ignore-timeout = &quot;false&quot;;
+    height = 100;
+    width = 300;
+    icons = true;
+    ignore-timeout = false;
     layer = &quot;top&quot;;
-    margin = &quot;10&quot;;
-    markup = &quot;true&quot;;
+    margin = 10;
+    markup = true;
+  
+    # Section example
+    &quot;actionable=true&quot; = {
+      anchor = &quot;top-left&quot;;
+    };
   }
 &#x27;&#x27;
 </code></pre>
