@@ -36,7 +36,8 @@ in
       };
       description = ''
         Configuration settings for halloy. All available options can be
-        found here: <https://halloy.chat/configuration/index.html>.
+        found here: <https://halloy.chat/configuration/index.html>. Note that
+        halloy requires at least one `server` to be configured, see example.
       '';
     };
     themes = mkOption {
@@ -48,21 +49,25 @@ in
         ]
       );
       default = { };
-      example = {
-        general = {
-          background = "<string>";
-          border = "<string>";
-          horizontal_rule = "<string>";
-          unread_indicator = "<string>";
-        };
-        text = {
-          primary = "<string>";
-          secondary = "<string>";
-          tertiary = "<string>";
-          success = "<string>";
-          error = "<string>";
-        };
-      };
+      example = lib.literalExpression ''
+        {
+          my-theme = {
+            general = {
+              background = "<string>";
+              border = "<string>";
+              horizontal_rule = "<string>";
+              unread_indicator = "<string>";
+            };
+            text = {
+              primary = "<string>";
+              secondary = "<string>";
+              tertiary = "<string>";
+              success = "<string>";
+              error = "<string>";
+            };
+          };
+        }
+      '';
       description = ''
         Each theme is written to {file}`$XDG_CONFIG_HOME/halloy/themes/NAME.toml`.
         See <https://halloy.chat/configuration/themes/index.html> for more information.
