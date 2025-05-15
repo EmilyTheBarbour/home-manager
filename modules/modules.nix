@@ -362,6 +362,7 @@ let
       ./services/flameshot.nix
       ./services/fluidsynth.nix
       ./services/fnott.nix
+      ./programs/foliate.nix
       ./services/fusuma.nix
       ./services/getmail.nix
       ./services/git-sync.nix
@@ -489,6 +490,7 @@ let
       ./services/xsuspender.nix
       ./services/yubikey-agent.nix
       ./systemd.nix
+      ./dbus.nix
       ./targets/darwin
       ./targets/generic-linux.nix
       ./wayland.nix
