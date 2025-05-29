@@ -393,6 +393,18 @@
       }
     ];
   };
+  karaolidis = {
+    name = "Nikolaos Karaolidis";
+    email = "nick@karaolidis.com";
+    github = "karaolidis";
+    githubId = 46189100;
+    keys = [
+      {
+        longKeyId = "rsa4096/0xF8549CDF32F178F7";
+        fingerprint = "E3E3 0A72 EBB3 4375 414B  23FD F854 9CDF 32F1 78F7";
+      }
+    ];
+  };
   katexochen = {
     name = "Paul Meyer";
     email = "49727155+katexochen@users.noreply.github.com";
@@ -579,6 +591,12 @@
     github = "mtoohey31";
     githubId = 36740602;
   };
+  munsman = {
+    name = "Hendrik Munske";
+    email = "munsman.github@gmail.com";
+    github = "munsman";
+    githubId = 48153666;
+  };
   n-hass = {
     name = "Nicholas Hassan";
     email = "nick@hassan.host";
@@ -721,6 +739,12 @@
         fingerprint = "D5D6 FD1F 0D9A 3284 FB9B  C26D 3F98 EC7E C2B8 7ED1";
       }
     ];
+  };
+  repparw = {
+    name = "repparw";
+    email = "ubritos@gmail.com";
+    github = "repparw";
+    githubId = 45952970;
   };
   rosuavio = {
     name = "Rosario Pulella";

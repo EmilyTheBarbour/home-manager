@@ -240,6 +240,7 @@ import nmtSrc {
       ./modules/programs/lsd
       ./modules/programs/man
       ./modules/programs/mbsync
+      ./modules/programs/meli
       ./modules/programs/mergiraf
       ./modules/programs/micro
       ./modules/programs/mise
@@ -334,6 +335,7 @@ import nmtSrc {
       ./modules/launchd
       ./modules/programs/aerospace
       ./modules/programs/element-desktop/darwin.nix
+      ./modules/programs/sketchybar
       ./modules/services/borgmatic-darwin
       ./modules/services/emacs-darwin
       ./modules/services/espanso-darwin
@@ -496,6 +498,7 @@ import nmtSrc {
       ./modules/services/udiskie
       ./modules/services/volnoti
       ./modules/services/way-displays
+      ./modules/services/wayvnc
       ./modules/services/window-managers/bspwm
       ./modules/services/window-managers/herbstluftwm
       ./modules/services/window-managers/hyprland

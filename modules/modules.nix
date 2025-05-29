@@ -186,6 +186,7 @@ let
       ./programs/matplotlib.nix
       ./programs/mbsync.nix
       ./programs/mcfly.nix
+      ./programs/meli.nix
       ./programs/mercurial.nix
       ./programs/mergiraf.nix
       ./programs/micro.nix
@@ -216,6 +217,7 @@ let
       ./programs/numbat.nix
       ./programs/nushell.nix
       ./programs/obs-studio.nix
+      ./programs/obsidian.nix
       ./programs/octant.nix
       ./programs/offlineimap.nix
       ./programs/oh-my-posh.nix
@@ -267,6 +269,7 @@ let
       ./programs/sesh.nix
       ./programs/sftpman.nix
       ./programs/sioyek.nix
+      ./programs/sketchybar.nix
       ./programs/skim.nix
       ./programs/sm64ex.nix
       ./programs/smug.nix
@@ -385,6 +388,7 @@ let
       ./services/hyprsunset.nix
       ./services/imapnotify.nix
       ./services/jankyborders.nix
+      ./services/jellyfin-mpv-shim.nix
       ./services/kanshi.nix
       ./services/kbfs.nix
       ./services/kdeconnect.nix
@@ -470,6 +474,7 @@ let
       ./services/vdirsyncer.nix
       ./services/volnoti.nix
       ./services/way-displays.nix
+      ./services/wayvnc.nix
       ./services/window-managers/awesome.nix
       ./services/window-managers/bspwm/default.nix
       ./services/window-managers/fluxbox.nix
