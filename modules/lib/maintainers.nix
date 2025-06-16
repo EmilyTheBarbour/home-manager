@@ -45,7 +45,7 @@
   };
   aguirre-matteo = {
     name = "aguirre-matteo";
-    email = "aguirre.matteo.nix@gmail.com";
+    email = "aguirre.matteo@proton.me";
     github = "aguirre-matteo";
     githubId = 158215792;
   };
@@ -364,6 +364,12 @@
     github = "jrobsonchase";
     githubId = 1553581;
     name = "Josh Robson Chase";
+  };
+  justdeeevin = {
+    email = "devin.droddy@gmail.com";
+    github = "justdeeevin";
+    githubId = 90054389;
+    name = "Devin Droddy";
   };
   justinlovinger = {
     name = "Justin Lovinger";
