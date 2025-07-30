@@ -200,7 +200,7 @@ let
     };
 in
 {
-  meta.maintainers = [ lib.hm.maintainers.cwyc ];
+  meta.maintainers = [ lib.maintainers.cwyc ];
 
   options.xdg.desktopEntries = mkOption {
     description = ''
@@ -229,7 +229,8 @@ in
   config = lib.mkIf (config.xdg.desktopEntries != { }) {
     assertions = [
       (lib.hm.assertions.assertPlatform "xdg.desktopEntries" pkgs lib.platforms.linux)
-    ] ++ lib.flatten (lib.catAttrs "assertions" (lib.attrValues config.xdg.desktopEntries));
+    ]
+    ++ lib.flatten (lib.catAttrs "assertions" (lib.attrValues config.xdg.desktopEntries));
 
     home.packages = (
       map lib.hiPrio # we need hiPrio to override existing entries
