@@ -369,9 +369,11 @@ let
             "davmail"
             "fastmail.com"
             "gmail.com"
+            "mailbox.org"
             "migadu.com"
             "outlook.office365.com"
             "plain"
+            "posteo.de"
             "runbox.com"
             "yandex.com"
           ];
@@ -591,6 +593,13 @@ let
           };
         })
 
+        (mkIf (config.flavor == "mailbox.org") {
+          userName = mkDefault config.address;
+          folders.inbox = mkDefault "INBOX";
+          imap.host = "imap.mailbox.org";
+          smtp.host = "smtp.mailbox.org";
+        })
+
         (mkIf (config.flavor == "migadu.com") {
           userName = mkDefault config.address;
 
@@ -618,6 +627,24 @@ let
             port = if config.smtp.tls.useStartTls then 587 else 465;
           };
         })
+
+        (
+          let
+            tls.enable = true;
+            host = "posteo.de";
+          in
+          mkIf ("posteo.de" == config.flavor) {
+            userName = mkDefault config.address;
+            imap = {
+              inherit host tls;
+              port = 993;
+            };
+            smtp = {
+              inherit host tls;
+              port = 465;
+            };
+          }
+        )
 
         (mkIf (config.flavor == "runbox.com") {
           imap = {

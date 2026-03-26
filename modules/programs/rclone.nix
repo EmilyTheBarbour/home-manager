@@ -9,11 +9,13 @@ let
 
   cfg = config.programs.rclone;
   iniFormat = pkgs.formats.ini { };
-  replaceSlashes = builtins.replaceStrings [ "/" ] [ "." ];
+  replaceIllegalChars = builtins.replaceStrings [ "/" " " "$" ] [ "." "_" "" ];
   isUsingSecretProvisioner = name: config ? "${name}" && config."${name}".secrets != { };
 
 in
 {
+  meta.maintainers = with lib.maintainers; [ jess ];
+
   imports = [
     (lib.mkRemovedOptionModule [ "programs" "rclone" "writeAfter" ] ''
       The writeAfter option has been removed because rclone configuration is now handled by a
@@ -111,6 +113,27 @@ in
                       options = {
                         enable = lib.mkEnableOption "this mount";
 
+                        autoMount = lib.mkEnableOption "automatic mounting" // {
+                          default = true;
+                        };
+
+                        logLevel = lib.mkOption {
+                          type = lib.types.nullOr (
+                            lib.types.enum [
+                              "ERROR"
+                              "NOTICE"
+                              "INFO"
+                              "DEBUG"
+                            ]
+                          );
+                          default = null;
+                          example = "INFO";
+                          description = ''
+                            Set the log-level.
+                            See: https://rclone.org/docs/#logging
+                          '';
+                        };
+
                         mountPoint = lib.mkOption {
                           type = lib.types.str;
                           default = null;
@@ -134,12 +157,12 @@ in
                           default = { };
                           apply = lib.mergeAttrs {
                             vfs-cache-mode = "full";
-                            cache-dir = "%C";
+                            cache-dir = "%C/rclone";
                           };
                           description = ''
                             An attribute set of option values passed to `rclone mount`. To set
                             a boolean option, assign it `true` or `false`. See
-                            <https://nixos.org/manual/nixpkgs/stable/#function-library-lib.cli.toGNUCommandLineShell>
+                            <https://nixos.org/manual/nixpkgs/stable/#function-library-lib.cli.toCommandLineShellGNU>
                             for more details on the format.
 
                             Some caching options are set by default, namely `vfs-cache-mode = "full"`
@@ -252,7 +275,7 @@ in
           injectSecret =
             remote:
             lib.mapAttrsToList (secret: secretFile: ''
-              if ! cat "${secretFile}"; then
+              if [[ ! -r "${secretFile}" ]]; then
                 echo "Secret \"${secretFile}\" not found"
                 cleanup
               fi
@@ -337,10 +360,12 @@ in
                 mount-path = name;
                 mount = value;
               in
-              [
-                (lib.nameValuePair "rclone-mount:${replaceSlashes mount-path}@${remote-name}" {
+              lib.optional mount.enable (
+                lib.nameValuePair "rclone-mount:${replaceIllegalChars mount-path}@${remote-name}" {
                   Unit = {
                     Description = "Rclone FUSE daemon for ${remote-name}:${mount-path}";
+                    Requires = [ "rclone-config.service" ];
+                    After = [ "rclone-config.service" ];
                   };
 
                   Service = {
@@ -348,22 +373,23 @@ in
                     Environment = [
                       # fusermount/fusermount3
                       "PATH=/run/wrappers/bin"
-                    ];
-                    ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p ${mount.mountPoint}";
+                    ]
+                    ++ lib.optional (mount.logLevel != null) "RCLONE_LOG_LEVEL=${mount.logLevel}";
+
+                    ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p ${lib.escapeShellArg mount.mountPoint}";
                     ExecStart = lib.concatStringsSep " " [
                       (lib.getExe cfg.package)
                       "mount"
-                      "-vv"
-                      (lib.cli.toGNUCommandLineShell { } mount.options)
-                      "${remote-name}:${mount-path}"
-                      "${mount.mountPoint}"
+                      (lib.cli.toCommandLineShellGNU { } mount.options)
+                      (lib.escapeShellArg "${remote-name}:${mount-path}")
+                      (lib.escapeShellArg mount.mountPoint)
                     ];
                     Restart = "on-failure";
                   };
 
-                  Install.WantedBy = [ "default.target" ];
-                })
-              ]
+                  Install.WantedBy = lib.optional mount.autoMount "default.target";
+                }
+              )
             ) (lib.attrsToList remote.mounts)
           )
           (
@@ -381,6 +407,4 @@ in
         mountServices
       ];
     };
-
-  meta.maintainers = with lib.maintainers; [ jess ];
 }

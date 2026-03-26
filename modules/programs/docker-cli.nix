@@ -16,16 +16,61 @@ let
   jsonFormat = pkgs.formats.json { };
 in
 {
-  meta.maintainers = [ lib.maintainers.friedrichaltheide ];
+  meta.maintainers = [
+    lib.maintainers.friedrichaltheide
+    lib.hm.maintainers.will-lol
+  ];
 
   options.programs.docker-cli = {
     enable = mkEnableOption "management of docker client config";
 
     configDir = mkOption {
       type = lib.types.str;
-      default = ".docker";
+      apply = p: lib.removePrefix "${config.home.homeDirectory}/" p;
+      default =
+        if config.xdg.enable && lib.versionAtLeast config.home.stateVersion "26.05" then
+          "${config.xdg.configHome}/docker"
+        else
+          ".docker";
+      defaultText = lib.literalExpression ''
+        if config.xdg.enable && lib.versionAtLeast config.home.stateVersion "26.05" then
+          "$XDG_CONFIG_HOME/docker"
+        else
+          ".docker"
+      '';
+      example = lib.literalExpression "\${config.xdg.configHome}/docker";
+      description = "Directory to store configuration and state. This also sets $DOCKER_CONFIG.";
+    };
+
+    contexts = mkOption {
+      type = lib.types.attrsOf (
+        lib.types.submodule (
+          { name, config, ... }:
+          {
+            freeformType = jsonFormat.type;
+            options = {
+              Name = mkOption {
+                type = lib.types.str;
+                readOnly = true;
+                description = "Name of the Docker context. Defaults to the attribute name (the <name> in programs.docker-cli.contexts.<name>). Overriding requires lib.mkForce.";
+              };
+            };
+            config.Name = name;
+          }
+        )
+      );
+      default = { };
+      example = lib.literalExpression ''
+        {
+          example = {
+            Metadata = { Description = "example1"; };
+            Endpoints.docker.Host = "unix://example2";
+          };
+        }
+      '';
       description = ''
-        Folder relative to the user's home directory where the Docker CLI settings should be stored.
+        Attribute set of Docker context configurations. Each attribute name becomes the context Name; overriding requires lib.mkForce. See:
+        <https://docs.docker.com/engine/manage-resources/contexts/
       '';
     };
 
@@ -59,7 +104,19 @@ in
         "${cfg.configDir}/config.json" = {
           source = jsonFormat.generate "config.json" cfg.settings;
         };
-      };
+      }
+      // lib.mapAttrs' (
+        n: ctx:
+        let
+          path = "${cfg.configDir}/contexts/meta/${builtins.hashString "sha256" ctx.Name}/meta.json";
+        in
+        {
+          name = path;
+          value = {
+            source = jsonFormat.generate "config.json" ctx;
+          };
+        }
+      ) cfg.contexts;
     };
   };
 }

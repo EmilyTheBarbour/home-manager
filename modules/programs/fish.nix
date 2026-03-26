@@ -153,8 +153,27 @@ let
     };
   };
 
+  completionModule = types.submodule {
+    options = {
+      body = mkOption {
+        type = types.lines;
+        description = ''
+          The completion file's body.
+        '';
+      };
+    };
+  };
+
   abbrModule = types.submodule {
     options = {
+      name = mkOption {
+        type = with types; nullOr str;
+        default = null;
+        description = ''
+          The abbreviation name that is replaced by the expansion.
+        '';
+      };
+
       expansion = mkOption {
         type = with types; nullOr str;
         default = null;
@@ -216,6 +235,14 @@ let
     { config, ... }:
     {
       options = {
+        name = mkOption {
+          type = with types; nullOr str;
+          default = null;
+          description = ''
+            The key name that is used for the bind.
+            If null, the attribute set key is used.
+          '';
+        };
         enable = mkEnableOption "enable the bind. Set false if you want to ignore the bind" // {
           default = true;
         };
@@ -223,11 +250,13 @@ let
           description = "Specify the bind mode that the bind is used in";
           type =
             with types;
-            nullOr (enum [
-              "default"
-              "insert"
-              "paste"
-            ]);
+            nullOr (
+              either (enum [
+                "default"
+                "insert"
+                "paste"
+              ]) str
+            );
           default = null;
         };
         command = mkOption {
@@ -252,15 +281,18 @@ let
           description = "Change current mode after bind is executed";
           type =
             with types;
-            nullOr (enum [
-              "default"
-              "insert"
-              "paste"
-            ]);
+            nullOr (
+              either (enum [
+                "default"
+                "insert"
+                "paste"
+              ]) str
+            );
           default = null;
         };
         erase = mkEnableOption "remove bind";
         silent = mkEnableOption "Operate silently";
+        repaint = mkEnableOption "redraw prompt after command";
         operate = mkOption {
           description = "Operate on preset bindings or user bindings";
           type =
@@ -277,23 +309,17 @@ let
 
   abbrsStr = lib.concatStringsSep "\n" (
     lib.mapAttrsToList (
-      name: def:
+      attrName: def:
       let
+        name = if isAttrs def && def.name != null then def.name else attrName;
         mods =
-          lib.cli.toGNUCommandLineShell
-            {
-              mkOption =
-                k: v:
-                if v == null then
-                  [ ]
-                else if k == "set-cursor" then
-                  [ "--${k}=${lib.generators.mkValueStringDefault { } v}" ]
-                else
-                  [
-                    "--${k}"
-                    (lib.generators.mkValueStringDefault { } v)
-                  ];
-            }
+          lib.cli.toCommandLineShell
+            (optionName: {
+              option = "--${optionName}";
+              sep = if optionName == "set-cursor" then "=" else null;
+              explicitBool = false;
+              formatArg = lib.generators.mkValueStringDefault { };
+            })
             {
               inherit (def)
                 position
@@ -322,8 +348,10 @@ let
       lib.mapAttrsToList (
         k:
         {
+          name,
           silent,
           erase,
+          repaint,
           operate,
           mode,
           setsMode,
@@ -331,6 +359,7 @@ let
           ...
         }:
         let
+          key = if name != null then name else k;
           opts =
             lib.optionals silent [ "-s" ]
             ++ lib.optionals (!isNull operate) [ "--${operate}" ]
@@ -344,7 +373,11 @@ let
             ];
 
           cmdNormal = lib.concatStringsSep " " (
-            [ "bind" ] ++ opts ++ [ k ] ++ map lib.escapeShellArg (lib.flatten [ command ])
+            [ "bind" ]
+            ++ opts
+            ++ [ key ]
+            ++ map lib.escapeShellArg (lib.flatten [ command ])
+            ++ lib.optional repaint "repaint"
           );
 
           cmdErase = lib.concatStringsSep "  " (
@@ -353,7 +386,7 @@ let
               "-e"
             ]
             ++ opts
-            ++ [ k ]
+            ++ [ key ]
           );
         in
         lib.optionals erase [ cmdErase ] ++ lib.optionals (!isNull command) [ cmdNormal ]
@@ -369,13 +402,29 @@ let
       passAsFile = [ "text" ];
     } "env HOME=$(mktemp -d) fish_indent < $textPath > $out";
 
-  translatedSessionVariables = pkgs.runCommandLocal "hm-session-vars.fish" { } ''
+  sessionVarsFile = "etc/profile.d/hm-session-vars.fish";
+  sessionVarsPkg = pkgs.runCommandLocal "hm-session-vars.fish" { } ''
+    mkdir -p "$(dirname $out/${sessionVarsFile})"
     (echo "function setup_hm_session_vars;"
     ${pkgs.buildPackages.babelfish}/bin/babelfish \
-    <${config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh
+      <${config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh
     echo "end"
-    echo "setup_hm_session_vars") > $out
+    echo "setup_hm_session_vars") > $out/${sessionVarsFile}
   '';
+  sourceHandlersStr =
+    let
+      handlerAttrs = [
+        "onJobExit"
+        "onProcessExit"
+        "onVariable"
+        "onSignal"
+        "onEvent"
+      ];
+      isHandler = name: def: isAttrs def && builtins.any (attr: builtins.hasAttr attr def) handlerAttrs;
+      handlerFunctions = lib.filterAttrs isHandler cfg.functions;
+      sourceFunction = name: def: "source ${config.xdg.configHome}/fish/functions/${name}.fish";
+    in
+    builtins.concatStringsSep "\n" (lib.mapAttrsToList sourceFunction handlerFunctions);
 
 in
 {
@@ -550,11 +599,47 @@ in
         <https://fishshell.com/docs/current/cmds/function.html>.
       '';
     };
+
+    programs.fish.completions = mkOption {
+      type = with types; attrsOf (either lines completionModule);
+      default = { };
+      example = literalExpression ''
+        {
+          my-prog = '''
+            complete -c myprog -s o -l output
+          ''';
+
+          my-app = {
+            body = '''
+              complete -c myapp -s -v
+            ''';
+          };
+        }
+      '';
+      description = ''
+        Custom fish completions. For more information see
+        <https://fishshell.com/docs/current/completions.html>.
+      '';
+    };
+
+    programs.fish.sessionVariablesPackage = mkOption {
+      type = types.package;
+      internal = true;
+      description = ''
+        The package containing the translated {file}`hm-session-vars.fish` file.
+      '';
+    };
   };
 
   config = mkIf cfg.enable (
     lib.mkMerge [
-      { home.packages = [ cfg.package ]; }
+      {
+        home.packages = [
+          cfg.package
+          cfg.sessionVariablesPackage
+        ];
+        programs.fish.sessionVariablesPackage = sessionVarsPkg;
+      }
 
       (mkIf cfg.generateCompletions (
         let
@@ -570,7 +655,7 @@ in
                   package
                 ]
                 ++ lib.filter (p: p != null) (
-                  builtins.map (outName: package.${outName} or null) config.home.extraOutputsToInstall
+                  map (outName: package.${outName} or null) config.home.extraOutputsToInstall
                 );
                 nativeBuildInputs = [ pkgs.python3 ];
                 buildInputs = [ cfg.package ];
@@ -597,7 +682,7 @@ in
           # Support completion for `man` by building a cache for `apropos`.
           programs.man.generateCaches = lib.mkDefault true;
 
-          xdg.dataFile."fish/home-manager_generated_completions".source =
+          xdg.dataFile."fish/home-manager/generated_completions".source =
             let
               # Paths later in the list will overwrite those already linked
               destructiveSymlinkJoin =
@@ -648,7 +733,7 @@ in
               set -l post_joined (string replace $prev_joined "" $joined)
               set -l prev (string split " " (string trim $prev_joined))
               set -l post (string split " " (string trim $post_joined))
-              set fish_complete_path $prev "${config.xdg.dataHome}/fish/home-manager_generated_completions" $post
+              set fish_complete_path $prev "${config.xdg.dataHome}/fish/home-manager/generated_completions" $post
             end
           '';
         }
@@ -667,7 +752,10 @@ in
           set -q __fish_home_manager_config_sourced; and exit
           set -g __fish_home_manager_config_sourced 1
 
-          source ${translatedSessionVariables}
+          source ${cfg.sessionVariablesPackage}/${sessionVarsFile}
+
+          # Source handler functions
+          ${sourceHandlersStr}
 
           ${cfg.shellInit}
 
@@ -727,6 +815,20 @@ in
               '';
           };
         }) cfg.functions;
+      }
+      {
+        xdg.configFile = lib.mapAttrs' (name: def: {
+          name = "fish/completions/${name}.fish";
+          value = {
+            source =
+              let
+                body = if isAttrs def then def.body else def;
+              in
+              fishIndent "${name}.fish" ''
+                ${lib.strings.removeSuffix "\n" body}
+              '';
+          };
+        }) cfg.completions;
       }
 
       # Each plugin gets a corresponding conf.d/plugin-NAME.fish file to load

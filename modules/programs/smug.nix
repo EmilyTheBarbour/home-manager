@@ -37,9 +37,17 @@ in
 
     projects = lib.mkOption {
       type = lib.types.attrsOf (
-        lib.types.submodule [
+        lib.types.submodule (
+          { name, ... }:
           {
             options = {
+              session = lib.mkOption {
+                type = lib.types.str;
+                default = name;
+                description = "Session name for the smug project.";
+                example = lib.literalExpression ''{ session = "project-\''${worktree}"; }'';
+              };
+
               root = mkOptionRoot ''
                 Root path in filesystem of the smug project. This is where tmux
                 changes its directory to.
@@ -56,6 +64,14 @@ in
                           type = lib.types.str;
                           description = ''
                             Name of the tmux window;
+                          '';
+                        };
+
+                        selected = lib.mkOption {
+                          type = lib.types.nullOr lib.types.bool;
+                          default = null;
+                          description = ''
+                            Whether this window should be selected by default at session start.
                           '';
                         };
 
@@ -131,7 +147,7 @@ in
               stop = mkOptionCommands "Commands to execute after the tmux-session is destroyed.";
             };
           }
-        ]
+        )
       );
       default = { };
       description = "Attribute set with project configurations.";
@@ -150,10 +166,10 @@ in
               prjConf =
                 lib.attrsets.mapAttrs' (
                   name: value:
-                  (lib.attrsets.nameValuePair (if name == "beforeStart" then "before_start" else name) (value))
+                  (lib.attrsets.nameValuePair (if name == "beforeStart" then "before_start" else name) value)
                 ) v
                 // {
-                  session = k;
+                  session = v.session;
                   windows = lib.lists.forEach v.windows (
                     winprop: (lib.filterAttrsRecursive (name: value: value != null) winprop)
                   );

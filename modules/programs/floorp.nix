@@ -16,9 +16,8 @@ in
     (mkFirefoxModule {
       inherit modulePath;
       name = "Floorp";
-      wrappedPackageName = "floorp";
-      unwrappedPackageName = "floorp-unwrapped";
-      visible = true;
+      wrappedPackageName = "floorp-bin";
+      unwrappedPackageName = "floorp-bin-unwrapped";
 
       platforms.linux = {
         configPath = ".floorp";

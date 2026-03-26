@@ -186,6 +186,30 @@ in
           ''
         ];
 
+    programs.zsh.setOptions =
+      let
+        historyOptions = {
+          APPEND_HISTORY = cfg.history.append;
+          HIST_IGNORE_DUPS = cfg.history.ignoreDups;
+          HIST_IGNORE_ALL_DUPS = cfg.history.ignoreAllDups;
+          HIST_SAVE_NO_DUPS = cfg.history.saveNoDups;
+          HIST_FIND_NO_DUPS = cfg.history.findNoDups;
+          HIST_IGNORE_SPACE = cfg.history.ignoreSpace;
+          HIST_EXPIRE_DUPS_FIRST = cfg.history.expireDuplicatesFirst;
+          SHARE_HISTORY = cfg.history.share;
+          EXTENDED_HISTORY = cfg.history.extended;
+        }
+        // lib.optionalAttrs (cfg.autocd != null) {
+          inherit (cfg) autocd;
+        };
+
+        enabledOpts = lib.filterAttrs (_: enabled: enabled) historyOptions;
+        disabledOpts = lib.filterAttrs (_: enabled: !enabled) historyOptions;
+      in
+      [ "HIST_FCNTL_LOCK" ]
+      ++ (lib.mapAttrsToList (name: _: name) enabledOpts)
+      ++ (lib.mapAttrsToList (name: _: "NO_" + name) disabledOpts);
+
     programs.zsh.initContent = lib.mkMerge [
       (lib.mkOrder 910 ''
         # History options should be set in .zshrc and after oh-my-zsh sourcing.
@@ -197,18 +221,6 @@ in
         ) "HISTORY_IGNORE=${lib.escapeShellArg "(${lib.concatStringsSep "|" cfg.history.ignorePatterns})"}"}
         HISTFILE="${mkShellVarPathStr cfg.history.path}"
         mkdir -p "$(dirname "$HISTFILE")"
-
-        setopt HIST_FCNTL_LOCK
-        ${if cfg.history.append then "setopt" else "unsetopt"} APPEND_HISTORY
-        ${if cfg.history.ignoreDups then "setopt" else "unsetopt"} HIST_IGNORE_DUPS
-        ${if cfg.history.ignoreAllDups then "setopt" else "unsetopt"} HIST_IGNORE_ALL_DUPS
-        ${if cfg.history.saveNoDups then "setopt" else "unsetopt"} HIST_SAVE_NO_DUPS
-        ${if cfg.history.findNoDups then "setopt" else "unsetopt"} HIST_FIND_NO_DUPS
-        ${if cfg.history.ignoreSpace then "setopt" else "unsetopt"} HIST_IGNORE_SPACE
-        ${if cfg.history.expireDuplicatesFirst then "setopt" else "unsetopt"} HIST_EXPIRE_DUPS_FIRST
-        ${if cfg.history.share then "setopt" else "unsetopt"} SHARE_HISTORY
-        ${if cfg.history.extended then "setopt" else "unsetopt"} EXTENDED_HISTORY
-        ${if cfg.autocd != null then "${if cfg.autocd then "setopt" else "unsetopt"} autocd" else ""}
       '')
 
       (lib.mkIf (cfg.historySubstringSearch.enable or false) (

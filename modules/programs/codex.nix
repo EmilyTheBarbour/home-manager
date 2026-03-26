@@ -12,8 +12,9 @@ let
   tomlFormat = pkgs.formats.toml { };
   yamlFormat = pkgs.formats.yaml { };
 
-  packageVersion = if cfg.package != null then lib.getVersion cfg.package else "0.2.0";
+  packageVersion = if cfg.package != null then lib.getVersion cfg.package else "0.94.0";
   isTomlConfig = lib.versionAtLeast packageVersion "0.2.0";
+  isAgentsSkillsSupported = lib.versionAtLeast packageVersion "0.94.0";
   settingsFormat = if isTomlConfig then tomlFormat else yamlFormat;
 in
 {
@@ -25,6 +26,20 @@ in
     enable = lib.mkEnableOption "Lightweight coding agent that runs in your terminal";
 
     package = lib.mkPackageOption pkgs "codex" { nullable = true; };
+
+    enableMcpIntegration = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Whether to integrate the MCP server config from
+        {option}`programs.mcp.servers` into
+        {option}`programs.codex.settings.mcp_servers`.
+
+        Note: Settings defined in {option}`programs.mcp.servers` are merged
+        with {option}`programs.codex.settings.mcp_servers`, with settings-based
+        values taking precedence.
+      '';
+    };
 
     settings = lib.mkOption {
       # NOTE: `yaml` type supports null, using `nullOr` for backwards compatibility period
@@ -48,6 +63,15 @@ in
               envKey = "OLLAMA_API_KEY";
             };
           };
+          mcp_servers = {
+            context7 = {
+              command = "npx";
+              args = [
+                "-y"
+                "@upstash/context7-mcp"
+              ];
+            };
+          };
         }
       '';
     };
@@ -62,26 +86,142 @@ in
         '''
       '';
     };
+
+    skills = lib.mkOption {
+      type = lib.types.either (lib.types.attrsOf (lib.types.either lib.types.lines lib.types.path)) lib.types.path;
+      default = { };
+      description = ''
+        Custom skills for Codex.
+
+        This option can either be:
+        - An attribute set defining skills
+        - A path to a directory containing multiple skill folders
+
+        If an attribute set is used, the attribute name becomes the skill directory name,
+        and the value is either:
+        - Inline content as a string (creates a generated skill directory at {file}`<skills-dir>/<name>/`)
+        - A path to a file (creates a generated skill directory at {file}`<skills-dir>/<name>/`)
+        - A path to a directory (symlinks {file}`<skills-dir>/<name>/` to that directory)
+
+        If a path is used, it is expected to contain one folder per skill name, each
+        containing a {file}`SKILL.md`. Each top-level skill entry is symlinked into
+        {file}`<skills-dir>/`, leaving {file}`<skills-dir>/` itself as a normal
+        directory so unmanaged skills can coexist.
+
+        The skills target directory depends on Codex version:
+        - {file}`~/.agents/skills` for Codex >= 0.94.0
+        - {file}`~/.codex/skills` for older versions
+      '';
+      example = lib.literalExpression ''
+        {
+          pdf-processing = '''
+            ---
+            name: pdf-processing
+            description: Extract text and tables from PDF files, fill forms, merge documents. Use when working with PDF files or when the user mentions PDFs, forms, or document extraction.
+            ---
+
+            # PDF Processing
+
+            ## Quick start
+
+            Use pdfplumber to extract text from PDFs:
+
+            ```python
+            import pdfplumber
+
+            with pdfplumber.open("document.pdf") as pdf:
+                text = pdf.pages[0].extract_text()
+            ```
+          ''';
+          data-analysis = ./skills/data-analysis;
+        }
+      '';
+    };
   };
 
   config =
     let
-      useXdgDirectories = (config.home.preferXdgDirectories && isTomlConfig);
+      useXdgDirectories = config.home.preferXdgDirectories && isTomlConfig;
       xdgConfigHome = lib.removePrefix config.home.homeDirectory config.xdg.configHome;
       configDir = if useXdgDirectories then "${xdgConfigHome}/codex" else ".codex";
       configFileName = if isTomlConfig then "config.toml" else "config.yaml";
+      skillsDir = if isAgentsSkillsSupported then ".agents/skills" else "${configDir}/skills";
+
+      # TODO: Remove this workaround once Codex supports symlinked SKILL.md
+      # files again. Upstream only supports symlinking the containing skill
+      # directory today: https://github.com/openai/codex/issues/10470
+      isStorePathString = content: builtins.isString content && lib.hasPrefix builtins.storeDir content;
+      isPathLikeContent = content: lib.isPath content || isStorePathString content;
+      mkSkillDir =
+        content:
+        pkgs.writeTextDir "SKILL.md" (
+          if isPathLikeContent content then builtins.readFile content else content
+        );
+      skillSources =
+        if builtins.isAttrs cfg.skills then
+          cfg.skills
+        else if lib.isPath cfg.skills && lib.pathIsDirectory cfg.skills then
+          lib.mapAttrs (name: _type: cfg.skills + "/${name}") (builtins.readDir cfg.skills)
+        else
+          { };
+      mkSkillEntry =
+        name: content:
+        if isPathLikeContent content && lib.pathIsDirectory content then
+          lib.nameValuePair "${skillsDir}/${name}" {
+            source = content;
+          }
+        else
+          lib.nameValuePair "${skillsDir}/${name}" {
+            source = mkSkillDir content;
+          };
+
+      transformedMcpServers = lib.optionalAttrs (cfg.enableMcpIntegration && config.programs.mcp.enable) (
+        lib.mapAttrs (
+          _name: server:
+          # NOTE: Convert shared programs.mcp fields to Codex config keys:
+          # - removeAttrs drops keys that Codex does not use directly
+          # - "disabled" becomes inverse "enabled"
+          # - "headers" is renamed to "http_headers"
+          # See: https://developers.openai.com/codex/mcp#other-configuration-options
+          (lib.removeAttrs server [
+            "disabled"
+            "headers"
+          ])
+          // (lib.optionalAttrs (server ? headers && !(server ? http_headers)) {
+            http_headers = server.headers;
+          })
+          // {
+            enabled = !(server.disabled or false);
+          }
+        ) config.programs.mcp.servers
+      );
+
+      settingMcpServers = lib.attrByPath [ "mcp_servers" ] { } cfg.settings;
+      mergedMcpServers = transformedMcpServers // settingMcpServers;
+      mergedSettings =
+        cfg.settings // lib.optionalAttrs (mergedMcpServers != { }) { mcp_servers = mergedMcpServers; };
     in
     mkIf cfg.enable {
+      assertions = [
+        {
+          assertion = !lib.isPath cfg.skills || lib.pathIsDirectory cfg.skills;
+          message = "`programs.codex.skills` must be a directory when set to a path";
+        }
+      ];
+
       home = {
         packages = mkIf (cfg.package != null) [ cfg.package ];
+
         file = {
-          "${configDir}/${configFileName}" = lib.mkIf (cfg.settings != { }) {
-            source = settingsFormat.generate "codex-config" cfg.settings;
+          "${configDir}/${configFileName}" = lib.mkIf (mergedSettings != { }) {
+            source = settingsFormat.generate "codex-config" mergedSettings;
           };
           "${configDir}/AGENTS.md" = lib.mkIf (cfg.custom-instructions != "") {
             text = cfg.custom-instructions;
           };
-        };
+        }
+        // lib.mapAttrs' mkSkillEntry skillSources;
+
         sessionVariables = mkIf useXdgDirectories {
           CODEX_HOME = "${config.xdg.configHome}/codex";
         };
